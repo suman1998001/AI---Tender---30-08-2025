@@ -1,0 +1,31 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Procurement Dashboard</title>
+    <meta name="description" content="AI-Powered Smart Procurement and Applicant Evaluation System" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script type="module">
+      //Import Mixpanel SDK
+import mixpanel from "mixpanel-browser";
+ 
+ // Near entry of your product, init Mixpanel
+ mixpanel.init("b23ed5f0c563913c1822dc17a53e98d0", {
+   debug: true,
+   track_pageview: true,
+   persistence: "localStorage",
+ });
+    </script>
+    
+  
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
