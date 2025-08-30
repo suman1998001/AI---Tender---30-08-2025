@@ -23,10 +23,133 @@ import {
   Trash2,
   Edit3,
   ExternalLink,
-  Loader2
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  Clock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+
+// Modern Processing Loader Component
+const ProcessingLoader = ({ fileName, currentStep }: { fileName: string; currentStep: string }) => {
+  const steps = [
+    { id: 'uploading', label: 'Uploading Document', icon: Upload },
+    { id: 'processing', label: 'Processing Content', icon: Loader2 },
+    { id: 'analyzing', label: 'Analyzing Structure', icon: FileText },
+    { id: 'generating', label: 'Generating Summary', icon: BookOpenCheck },
+    { id: 'complete', label: 'Complete', icon: CheckCircle }
+  ];
+
+  const currentStepIndex = steps.findIndex(step => step.id === currentStep);
+
+  return (
+    <div className="border-2 border-dashed border-red-accent/30 rounded-lg p-8 text-center bg-gradient-to-br from-red-accent/5 to-red-accent/10">
+      <div className="relative">
+        {/* Animated Background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-accent/10 to-transparent animate-pulse rounded-lg" />
+        
+        {/* Main Content */}
+        <div className="relative z-10">
+          {/* Animated Icon */}
+          <div className="relative w-16 h-16 mx-auto mb-6">
+            <div className="absolute inset-0 bg-red-accent/20 rounded-full animate-ping" />
+            <div className="absolute inset-2 bg-red-accent rounded-full flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-white animate-spin" />
+            </div>
+          </div>
+
+          {/* Title */}
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            Processing Tender Document
+          </h3>
+          
+          {/* File Name */}
+          <p className="text-sm text-gray-600 mb-6 font-medium">
+            {fileName}
+          </p>
+
+          {/* Progress Steps */}
+          <div className="max-w-md mx-auto mb-6">
+            <div className="space-y-3">
+              {steps.map((step, index) => {
+                const StepIcon = step.icon;
+                const isCompleted = index < currentStepIndex;
+                const isCurrent = index === currentStepIndex;
+                const isPending = index > currentStepIndex;
+
+                return (
+                  <div key={step.id} className="flex items-center gap-3">
+                    {/* Step Icon */}
+                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
+                       isCompleted 
+                         ? 'bg-green-500 text-white animate-[stepComplete_0.5s_ease-out]' 
+                         : isCurrent 
+                         ? 'bg-red-accent text-white animate-[processingPulse_1s_ease-in-out_infinite]' 
+                         : 'bg-gray-200 text-gray-400'
+                     }`}>
+                      {isCompleted ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : isCurrent ? (
+                        <StepIcon className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <StepIcon className="w-4 h-4" />
+                      )}
+                    </div>
+
+                    {/* Step Label */}
+                    <span className={`text-sm font-medium ${
+                      isCompleted 
+                        ? 'text-green-600' 
+                        : isCurrent 
+                        ? 'text-red-accent' 
+                        : 'text-gray-400'
+                    }`}>
+                      {step.label}
+                    </span>
+
+                    {/* Current Step Indicator */}
+                    {isCurrent && (
+                      <div className="ml-auto">
+                        <div className="w-2 h-2 bg-red-accent rounded-full animate-ping" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="w-full bg-gray-200 rounded-full h-2 mb-4 overflow-hidden">
+            <div 
+              className="bg-gradient-to-r from-red-accent to-red-600 h-2 rounded-full transition-all duration-500 ease-out animate-pulse"
+              style={{ 
+                width: `${((currentStepIndex + 1) / steps.length) * 100}%`,
+                animation: 'progressGlow 2s ease-in-out infinite'
+              }}
+            />
+          </div>
+
+          {/* Status Message */}
+          <p className="text-sm text-gray-500">
+            {currentStep === 'uploading' && 'Uploading your document to secure storage...'}
+            {currentStep === 'processing' && 'Extracting text and analyzing document structure...'}
+            {currentStep === 'analyzing' && 'Identifying key sections and requirements...'}
+            {currentStep === 'generating' && 'Creating comprehensive summary and insights...'}
+            {currentStep === 'complete' && 'Document processed successfully!'}
+          </p>
+
+          {/* Estimated Time */}
+          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
+            <Clock className="w-3 h-3" />
+            <span>Estimated time: 2-3 minutes</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface Literature {
   id: string;
@@ -62,6 +185,8 @@ export const LiteratureTab = ({ rfpId }: LiteratureTabProps = {}) => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [processingFiles, setProcessingFiles] = useState<Set<string>>(new Set());
+  const [currentProcessingStep, setCurrentProcessingStep] = useState<string>('uploading');
+  const [processingFileName, setProcessingFileName] = useState<string>('');
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
@@ -197,7 +322,7 @@ export const LiteratureTab = ({ rfpId }: LiteratureTabProps = {}) => {
   };
 
   // Check if any file is in processing status
-  const isUploadDisabled = processingFiles.size > 0 || uploading;
+  const isUploadDisabled = processingFiles.size > 0 || uploading || currentProcessingStep !== 'uploading';
 
   // Get unique types and years
   const literatureTypes = Array.from(new Set(literature.map(l => l.type))).sort();
@@ -246,8 +371,13 @@ export const LiteratureTab = ({ rfpId }: LiteratureTabProps = {}) => {
   const handleUploadLiterature = async () => {
     try {
       setUploading(true);
+      setCurrentProcessingStep('uploading');
       const fileInput = document.getElementById('file-upload') as HTMLInputElement;
       const file = fileInput?.files?.[0];
+      
+      if (file) {
+        setProcessingFileName(file.name);
+      }
 
       //S3 upload function start
       const randomString = Math.random().toString(36).substring(2, 5);
@@ -268,6 +398,9 @@ export const LiteratureTab = ({ rfpId }: LiteratureTabProps = {}) => {
       });
 
       if (!putRes.ok) throw new Error("Upload failed");
+
+      // Update to processing step
+      setCurrentProcessingStep('processing');
 
       const getFileRes = await fetch(`https://zftevtw2jnwawb6wuuumk3z6su0gittt.lambda-url.us-west-2.on.aws/?token=ty678956Utnbken8vbfks`, {
         method: "post",
@@ -317,10 +450,17 @@ export const LiteratureTab = ({ rfpId }: LiteratureTabProps = {}) => {
         return;
       }
 
+      // Update to analyzing step
+      setCurrentProcessingStep('analyzing');
+      
       toast({
         title: "Success",
         description: "Document uploaded successfully. Now generating summery..."
       });
+      
+      // Update to generating step
+      setCurrentProcessingStep('generating');
+      
       // Refresh the literature list
       await fetchLiterature(true);
 
@@ -328,6 +468,15 @@ export const LiteratureTab = ({ rfpId }: LiteratureTabProps = {}) => {
       if (fileInput) {
         fileInput.value = '';
       }
+      // Update to complete step
+      setCurrentProcessingStep('complete');
+      
+      // Wait a moment to show completion
+      setTimeout(() => {
+        setCurrentProcessingStep('uploading');
+        setProcessingFileName('');
+      }, 2000);
+      
       toast({
         title: "Success",
         description: "Summery Generated successfully."
@@ -337,6 +486,11 @@ export const LiteratureTab = ({ rfpId }: LiteratureTabProps = {}) => {
       toast({ title: 'Upload failed', description: 'An unexpected error occurred', variant: 'destructive' });
     } finally {
       setUploading(false);
+      // Reset processing state if there was an error
+      if (currentProcessingStep !== 'complete') {
+        setCurrentProcessingStep('uploading');
+        setProcessingFileName('');
+      }
     }
   };
 
@@ -392,13 +546,7 @@ export const LiteratureTab = ({ rfpId }: LiteratureTabProps = {}) => {
           <div className="w-full">
                          {/* Upload Literature */}
              {isUploadDisabled ? (
-               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50 cursor-not-allowed">
-                 <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                 <p className="text-xl font-medium text-gray-900 mb-2">Upload Tender Document</p>
-                 <p className="text-sm text-gray-600">
-                   Please wait for current upload to complete
-                 </p>
-               </div>
+               <ProcessingLoader fileName={processingFileName || "Processing document..."} currentStep={currentProcessingStep} />
              ) : (
                <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
                  <DialogTrigger asChild>

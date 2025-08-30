@@ -68,6 +68,44 @@
     100% { width: 100%; }
   }
 
+  @keyframes processingPulse {
+    0%, 100% { 
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% { 
+      transform: scale(1.05);
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes stepComplete {
+    0% { 
+      transform: scale(0.8);
+      opacity: 0;
+    }
+    50% { 
+      transform: scale(1.1);
+      opacity: 1;
+    }
+    100% { 
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes progressGlow {
+    0% { 
+      box-shadow: 0 0 5px hsl(var(--red-accent) / 0.3);
+    }
+    50% { 
+      box-shadow: 0 0 15px hsl(var(--red-accent) / 0.6);
+    }
+    100% { 
+      box-shadow: 0 0 5px hsl(var(--red-accent) / 0.3);
+    }
+  }
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
 
 @layer base {
@@ -424,5 +462,85 @@
   .dialog-content {
     z-index: 51;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Line clamp utilities for text truncation */
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .line-clamp-4 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+  }
+
+  /* Table styling for better layout */
+  .table-container {
+    position: relative;
+    overflow: auto;
+  }
+
+  .table-container table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .table-container th {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+    border-bottom: 2px solid #e5e7eb;
+    padding: 12px 8px;
+  }
+
+  .table-container td {
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: top;
+    padding: 16px 8px;
+  }
+
+  .table-container tr {
+    min-height: 120px;
+  }
+
+  .table-container tr:hover {
+    background-color: #f9fafb;
+  }
+
+  /* Ensure proper text wrapping in table cells */
+  .table-cell-content {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    max-width: 100%;
+  }
+
+  /* Better table row spacing */
+  .table-row-spaced {
+    min-height: 120px;
+  }
+
+  .table-row-spaced td {
+    padding: 16px 8px;
   }
 }

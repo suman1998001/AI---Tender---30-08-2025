@@ -9,10 +9,40 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MessageSquare, Upload, FileSpreadsheet, Eye, RefreshCw, CheckCircle, Loader2, AlertCircle, Clock, ArrowLeft, Users, Search, Filter, Bot, Flag, Edit3, MoreHorizontal } from "lucide-react";
+import { MessageSquare, Upload, FileSpreadsheet, Eye, RefreshCw, CheckCircle, Loader2, AlertCircle, Clock, ArrowLeft, Users, Search, Filter, Bot, Flag, Edit3, MoreHorizontal, BookOpenCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
+
+// Modern Processing Loader Component
+const ProcessingLoader = ({ fileName }: { fileName: string }) => {
+  return (
+    <div className="border-2 border-dashed border-red-accent/30 rounded-lg p-8 text-center bg-gradient-to-br from-red-50/50 to-white">
+      {/* Central Processing Icon */}
+      <div className="relative mb-6">
+        <div className="w-16 h-16 mx-auto bg-red-accent rounded-full flex items-center justify-center shadow-lg animate-[processingPulse_1s_ease-in-out_infinite]">
+          <Loader2 className="w-8 h-8 text-white animate-spin" />
+        </div>
+        <div className="absolute inset-0 w-16 h-16 mx-auto border-4 border-red-accent/20 rounded-full animate-ping"></div>
+      </div>
+
+      {/* File Name */}
+      <h3 className="text-lg font-semibold text-gray-800 mb-2">
+        Processing: {fileName}
+      </h3>
+
+      {/* Status Message */}
+      <p className="text-sm text-gray-600 mb-2">
+        Please wait while we process your document...
+      </p>
+
+      {/* Estimated Time */}
+      <p className="text-xs text-gray-500">
+        Estimated time: 2-3 minutes
+      </p>
+    </div>
+  );
+};
 interface UploadedFile {
   id: string;
   rfpId?: string;
@@ -102,11 +132,15 @@ export const PreBidQueriesTab = ({ rfpId }: PreBidQueriesTabProps = {}) => {
     answersGenerated: 0
   }]);
   const [showBulkUploadDialog, setShowBulkUploadDialog] = useState(false);
-const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-const [parsedByFileName, setParsedByFileName] = useState<Record<string, QueryData[]>>({});
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [parsedByFileName, setParsedByFileName] = useState<Record<string, QueryData[]>>({});
+  const [processingFileName, setProcessingFileName] = useState<string>('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Mock query data for analysis view
   const [queries, setQueries] = useState<QueryData[]>([]);
+  const [originalAnswers, setOriginalAnswers] = useState<Record<string, string>>({});
+  const [editingAnswerId, setEditingAnswerId] = useState<string | null>(null);
 
   // Analysis view filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -247,14 +281,18 @@ const [parsedByFileName, setParsedByFileName] = useState<Record<string, QueryDat
   };
 
   const handleBulkUpload = async () => {
-    if (selectedFiles.length === 0) {
-      toast({
-        title: "No Files Selected",
-        description: "Please select at least one file to upload",
-        variant: "destructive"
-      });
-      return;
-    }
+    try {
+      if (selectedFiles.length === 0) {
+        toast({
+          title: "No Files Selected",
+          description: "Please select at least one file to upload",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setIsProcessing(true);
+      setProcessingFileName(selectedFiles.map(f => f.name).join(', '));
 
     const now = Date.now();
     const year = new Date().getFullYear();
@@ -275,13 +313,15 @@ const [parsedByFileName, setParsedByFileName] = useState<Record<string, QueryDat
       if (!data.upload_url) throw new Error("No upload_url in response");
 
       // 2. Upload file to S3 using PUT
-      const putRes = await fetch(data.upload_url, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "text/csv"
-        },
-        body: file
-      });
+             const putRes = await fetch(data.upload_url, {
+         method: "PUT",
+         headers: {
+           "Content-Type": "text/csv"
+         },
+         body: file
+       });
+
+
 
       const getFileRes = await fetch(`https://zftevtw2jnwawb6wuuumk3z6su0gittt.lambda-url.us-west-2.on.aws/?token=ty678956Utnbken8vbfks`, {
         method: "post",
@@ -321,10 +361,12 @@ const [parsedByFileName, setParsedByFileName] = useState<Record<string, QueryDat
       return;
     }
 
-    const inserted = (data || []).map(mapRowToUploadedFile);
-    setUploadedFiles([...inserted, ...uploadedFiles]);
-    setShowBulkUploadDialog(false);
-    setSelectedFiles([]);
+         const inserted = (data || []).map(mapRowToUploadedFile);
+     setUploadedFiles([...inserted, ...uploadedFiles]);
+     setShowBulkUploadDialog(false);
+     setSelectedFiles([]);
+
+
 
     // Simulate processing status updates in DB and UI
     inserted.forEach((row, index) => {
@@ -338,10 +380,11 @@ const [parsedByFileName, setParsedByFileName] = useState<Record<string, QueryDat
 
         setUploadedFiles(prev => prev.map(f => f.id === row.id ? { ...f, status: 'Processing', queriesCount: 0 } : f));
 
-        setTimeout(async () => {
+                 setTimeout(async () => {
 
-          // Update with result S3 URI when processing is complete
-          const mappedRes = await fetch('https://hwkfcn3mi4xthu6txuw3w2j7gy0xjgwk.lambda-url.us-west-2.on.aws/', {
+
+           // Update with result S3 URI when processing is complete
+           const mappedRes = await fetch('https://hwkfcn3mi4xthu6txuw3w2j7gy0xjgwk.lambda-url.us-west-2.on.aws/', {
             method: "post",
             headers: {
               "Content-Type": "application/json"
@@ -373,15 +416,26 @@ const [parsedByFileName, setParsedByFileName] = useState<Record<string, QueryDat
             resultS3Uri: resultS3Uri
           } : f));
 
-          if (index === inserted.length - 1) {
-            toast({ title: 'Upload Complete', description: `All ${inserted.length} files have been processed and answers generated` });
-          }
+                     if (index === inserted.length - 1) {
+             // Wait a moment to show completion
+             setTimeout(() => {
+               setIsProcessing(false);
+               setProcessingFileName('');
+             }, 2000);
+             
+             toast({ title: 'Upload Complete', description: `All ${inserted.length} files have been processed and answers generated` });
+           }
         }, 3000 + index * 500);
       }, delay);
     });
 
-    toast({ title: 'Upload Started', description: `Processing ${rowsToInsert.length} file(s) with pre-bid queries` });
-  };
+         toast({ title: 'Upload Started', description: `Processing ${rowsToInsert.length} file(s) with pre-bid queries` });
+   } catch (error) {
+     setIsProcessing(false);
+     setProcessingFileName('');
+     toast({ title: 'Upload failed', description: 'An unexpected error occurred', variant: 'destructive' });
+   }
+   };
   const refreshStatus = async () => {
     await fetchUploads();
     toast({
@@ -425,6 +479,13 @@ const [parsedByFileName, setParsedByFileName] = useState<Record<string, QueryDat
           status_marker:q?.status_marker
         }));
         setQueries(mappedQueries);
+        
+        // Store original answers for reset functionality
+        const originalAnswersMap: Record<string, string> = {};
+        mappedQueries.forEach(query => {
+          originalAnswersMap[query.id] = query.answer;
+        });
+        setOriginalAnswers(originalAnswersMap);
       }
     }
   };
@@ -478,19 +539,15 @@ const [parsedByFileName, setParsedByFileName] = useState<Record<string, QueryDat
       isAnswered
     } : q));
 
-    // Update database
-    const { error } = await sb
-      .from('prebid_queries')
-      .update({ 
-        answer: newAnswer, 
-        is_answered: isAnswered,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', queryId);
+    // Update original answers when save is successful
+    setOriginalAnswers(prev => ({
+      ...prev,
+      [queryId]: newAnswer
+    }));
 
-    if (error) {
-      toast({ title: 'Failed to update answer', description: error.message, variant: 'destructive' });
-    }
+    // Note: Since data comes from S3 JSON file, we only update local state
+    // Database update is not needed as the data is not stored in database
+    return Promise.resolve(); // Return resolved promise for consistency
   };
   const toggleFlag = async (queryId: string) => {
     const query = queries.find(q => q.id === queryId);
@@ -504,18 +561,8 @@ const [parsedByFileName, setParsedByFileName] = useState<Record<string, QueryDat
       flagForIntervention: newFlagValue
     } : q));
 
-    // Update database
-    const { error } = await sb
-      .from('prebid_queries')
-      .update({ 
-        flag_for_intervention: newFlagValue,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', queryId);
-
-    if (error) {
-      toast({ title: 'Failed to update flag', description: error.message, variant: 'destructive' });
-    }
+    // Note: Since data comes from S3 JSON file, we only update local state
+    toast({ title: 'Flag Updated', description: 'Flag status has been updated locally' });
   };
   const updateType = async (queryId: string, newType: "Clarification" | "Request for Relaxation" | "Request for Modification" | "General Observation" | "Error/Flaw" | "Duplicate/Similar") => {
     // Update local state
@@ -524,18 +571,8 @@ const [parsedByFileName, setParsedByFileName] = useState<Record<string, QueryDat
       type: newType
     } : q));
 
-    // Update database
-    const { error } = await sb
-      .from('prebid_queries')
-      .update({ 
-        query_type: newType,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', queryId);
-
-    if (error) {
-      toast({ title: 'Failed to update type', description: error.message, variant: 'destructive' });
-    }
+    // Note: Since data comes from S3 JSON file, we only update local state
+    toast({ title: 'Type Updated', description: 'Query type has been updated locally' });
   };
   const getGroupColor = (group: string) => {
     const groups = Array.from(new Set(queries.map(q => q.group))).sort();
@@ -778,130 +815,169 @@ const [parsedByFileName, setParsedByFileName] = useState<Record<string, QueryDat
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="w-full overflow-x-auto" style={{ maxWidth: '100%' }}>
-              <div className="min-w-[1200px]">
-                <Table className="w-full">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-20 min-w-[80px]">SL No</TableHead>
-                    <TableHead className="w-[400px] min-w-[350px]">Question</TableHead>
-                    <TableHead className="w-[500px] min-w-[400px]">Answer</TableHead>
-                    <TableHead className="w-[300px] min-w-[250px]">Clause/Section</TableHead>
-                    <TableHead className="w-[150px] min-w-[120px]">Type</TableHead>
-                    <TableHead className="w-[250px] min-w-[200px]">Vendor</TableHead>
-                    <TableHead className="w-[220px] min-w-[200px]">Status</TableHead>
-                    <TableHead className="w-[300px] min-w-[250px]">Internal Notes</TableHead>
-                    {/* <TableHead className="w-20 min-w-[80px]">Actions</TableHead> */}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredQueries.map((query, index) => <TableRow key={query.id} className="hover:bg-muted/50">
-                      <TableCell className="align-top text-center">
-                        <span className="text-sm font-medium text-muted-foreground">
-                          {index + 1}
-                        </span>
-                      </TableCell>
-                      <TableCell className="align-top">
-                        <Dialog>
+            <div className="w-full overflow-hidden">
+              <div className="overflow-x-auto max-w-full">
+                <Table className="w-full table-fixed">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-16">SL No</TableHead>
+                      <TableHead className="w-[200px]">Question</TableHead>
+                      <TableHead className="w-[200px]">Answer</TableHead>
+                      <TableHead className="w-[120px]">Clause/Section</TableHead>
+                      <TableHead className="w-[100px]">Type</TableHead>
+                      <TableHead className="w-[150px]">Vendor</TableHead>
+                      <TableHead className="w-[100px]">Status</TableHead>
+                      <TableHead className="w-[150px]">Internal Notes</TableHead>
+                      <TableHead className="w-16">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                                     <TableBody>
+                     {filteredQueries.map((query, index) => <TableRow key={query.id} className="hover:bg-muted/50 min-h-[80px]">
+                        <TableCell className="align-top text-center py-4">
+                          <span className="text-sm font-medium text-muted-foreground">
+                            {index + 1}
+                          </span>
+                        </TableCell>
+                        <TableCell className="align-top py-4">
+                          <div className="max-w-full">
+                            <p className="text-sm text-black leading-relaxed whitespace-pre-wrap">
+                              {query.question}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="align-top py-4">
+                          <Dialog open={editingAnswerId === query.id} onOpenChange={(open) => {
+                            if (!open) {
+                              setEditingAnswerId(null);
+                              // Reset to original answer when dialog closes
+                              setQueries(prev => prev.map(q => 
+                                q.id === query.id ? { ...q, answer: originalAnswers[query.id] || "" } : q
+                              ));
+                            }
+                          }}>
                             <DialogTrigger asChild>
-                              <div className="max-w-full">
-                                <p className="text-sm text-black leading-relaxed">
-                                  {query.question}
+                              <div 
+                                className="cursor-pointer hover:bg-muted/50 p-2 rounded min-h-[48px] overflow-hidden"
+                                onClick={() => setEditingAnswerId(query.id)}
+                              >
+                                <p className="text-sm text-black leading-relaxed whitespace-pre-wrap">
+                                  {query.answer || "Click to edit answer..."}
                                 </p>
                               </div>
                             </DialogTrigger>
                             <DialogContent className="max-w-2xl">
-                                  <DialogHeader>
-                                    <DialogTitle>Question</DialogTitle>
-                                  </DialogHeader>
-                                  <div className="space-y-4">
-                                    <div className="text-sm text-black">
-                                      {query.question}
-                                    </div>
-                                  </div>
-                            </DialogContent>
-                        </Dialog>
-                        
-                      </TableCell>
-                      <TableCell className="align-top">
-                            <div className="cursor-pointer hover:bg-muted/50 p-2 rounded min-h-[48px] max-h-[48px]">
-                              <p className="text-sm text-black">
-                                {query.answer}
-                              </p>
-                            </div>
-                      </TableCell>
-                      <TableCell className="align-top">
-                          
-                                <div className="max-w-full">
-                                  <p className="text-sm text-black leading-relaxed">
-                                    {query.group}
-                                  </p>
+                              <DialogHeader>
+                                <DialogTitle>Edit Answer</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="text-sm text-black">
+                                  <strong>Question:</strong> {query.question}
                                 </div>
-                              
-                      </TableCell>
-                      <TableCell className="align-top">
-                        <Badge variant={
-                          query.type=='Error/Flaw' ? "destructive" :
-                          query.type=='Request for Relaxation' ? "warning" :
-                          query.type=='Request for Modification' ? "info" :
-                          query.type=='Clarification' ? "success" :
-                          query.type=='General Observation' ? "purple" :
-                          query.type=='Duplicate/Similar' ? "orange" : "default"
-                        } className="text-xs">
-                          {query.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="align-top">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                          <span className="text-xs text-gray-600 max-w-[150px] truncate">
-                            {query.vendor}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="align-top">
-                        <Badge variant={
-                          query.status_marker=='Answer Provided' ? "success" :
-                          query.status_marker=='Pending Clarification' ? "destructive" :
-                          query.status_marker=='Human Intervention Required' ? "warning" :
-                          query.status_marker=='Under Review' ? "info" :
-                          query.status_marker=='Draft' ? "purple" :
-                          query.status_marker=='Finalized' ? "teal" : "default"
-                        } className="text-xs">
-                          {query.status_marker}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="align-top">
-                        <div className="cursor-pointer hover:bg-muted/50 p-2 rounded min-h-[48px] max-h-[48px]">
-                              <p className="text-sm text-black">
-                                {query.internalNotes}
-                              </p>
-                        </div>
-                        
-                      </TableCell>
-                      {/* <TableCell className="align-top">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => toggleFlag(query.id)}>
-                              <Flag className="mr-2 h-4 w-4" />
-                              {query.flagForIntervention ? "Remove Flag" : "Flag for Review"}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Edit3 className="mr-2 h-4 w-4" />
-                              Edit Type
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell> */}
-                    </TableRow>)}
-                </TableBody>
-              </Table>
-            </div>
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium text-gray-700">Answer:</label>
+                                  <Textarea 
+                                    value={query.answer || ""}
+                                    onChange={(e) => {
+                                      setQueries(prev => prev.map(q => 
+                                        q.id === query.id ? { ...q, answer: e.target.value } : q
+                                      ));
+                                    }}
+                                    placeholder="Enter your answer here..."
+                                    className="min-h-[200px] resize-none"
+                                  />
+                                </div>
+                                <div className="flex justify-end gap-2 pt-4">
+                                  <Button 
+                                    variant="outline" 
+                                    onClick={() => {
+                                      setEditingAnswerId(null);
+                                      // Reset to original answer
+                                      setQueries(prev => prev.map(q => 
+                                        q.id === query.id ? { ...q, answer: originalAnswers[query.id] || "" } : q
+                                      ));
+                                    }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button 
+                                    onClick={async () => {
+                                      try {
+                                        await updateAnswer(query.id, query.answer || "");
+                                        toast({
+                                          title: "Answer Updated",
+                                          description: "The answer has been successfully saved.",
+                                        });
+                                        setEditingAnswerId(null);
+                                      } catch (error) {
+                                        toast({
+                                          title: "Update Failed",
+                                          description: "Failed to update the answer. Please try again.",
+                                          variant: "destructive"
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    Save Answer
+                                  </Button>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </TableCell>
+                        <TableCell className="align-top py-4">
+                          <Badge className={getGroupColor(query.group)}>
+                            <Bot className="w-3 h-3 mr-1" />
+                            {query.group}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="align-top py-4">
+                          <Badge variant="outline" className="text-xs">
+                            {query.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="align-top py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                            <span className="text-xs text-gray-600 max-w-[150px] truncate">
+                              {query.vendor}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="align-top py-4">
+                          <Badge variant={query.isAnswered ? "default" : "secondary"} className="text-xs">
+                            {query.isAnswered ? "Answered" : "Pending"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="align-top py-4">
+                          <div className="p-2 rounded min-h-[48px]">
+                            <p className="text-sm text-black leading-relaxed whitespace-pre-wrap">
+                              {query.internalNotes || "No internal notes"}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="align-top py-4">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => toggleFlag(query.id)}>
+                                <Flag className="mr-2 h-4 w-4" />
+                                {query.flagForIntervention ? "Remove Flag" : "Flag for Review"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Edit3 className="mr-2 h-4 w-4" />
+                                Edit Type
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>)}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
 
             {filteredQueries.length === 0 && <div className="text-center py-8 text-gray-500 px-6">
@@ -939,9 +1015,13 @@ const [parsedByFileName, setParsedByFileName] = useState<Record<string, QueryDat
             Bulk CSV Upload Interface
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <Dialog open={showBulkUploadDialog} onOpenChange={(open) => {
+                 <CardContent>
+           <div className="text-center py-8">
+                          {isProcessing ? (
+               <ProcessingLoader fileName={processingFileName || "Processing files..."} />
+             ) : (
+               <>
+                <Dialog open={showBulkUploadDialog} onOpenChange={(open) => {
                              if (isUploadDisabled && open) {
                  toast({
                    title: "Upload Disabled",
@@ -1028,14 +1108,16 @@ const [parsedByFileName, setParsedByFileName] = useState<Record<string, QueryDat
                 </div>
               </DialogContent>
             </Dialog>
-                         <p className="text-sm text-muted-foreground mt-3">
-               {isUploadDisabled 
-                 ? "Upload is disabled while a file is being uploaded or processed. Please wait for the current operation to complete."
-                 : "Primary method for adding multiple pre-bid queries at once"
-               }
-             </p>
-          </div>
-        </CardContent>
+                                         <p className="text-sm text-muted-foreground mt-3">
+                  {isUploadDisabled 
+                    ? "Upload is disabled while a file is being uploaded or processed. Please wait for the current operation to complete."
+                    : "Primary method for adding multiple pre-bid queries at once"
+                  }
+                </p>
+               </>
+             )}
+           </div>
+         </CardContent>
       </Card>
 
       {/* Statistics Cards */}
