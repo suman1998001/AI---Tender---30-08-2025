@@ -1,0 +1,428 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom animations for Document Center */
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes expandWidth {
+  0% { width: 0%; }
+  100% { width: var(--target-width, 100%); }
+}
+
+/* Login page keyframes */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 20px hsl(var(--red-accent) / 0.3); }
+  100% { box-shadow: 0 0 40px hsl(var(--red-accent) / 0.6); }
+}
+
+@keyframes slideInLeft {
+  0% { 
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+  100% { 
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  0% { 
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  100% { 
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  0% { 
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  }
+
+  @keyframes loading {
+    0% { width: 0%; }
+    100% { width: 100%; }
+  }
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+
+    --radius: 0.625rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 9%;
+    --sidebar-primary: 0 0% 9%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 96.1%;
+    --sidebar-accent-foreground: 0 0% 9%;
+    --sidebar-border: 0 0% 89.8%;
+    --sidebar-ring: 0 0% 3.9%;
+
+    /* Premium red accent colors */
+    --red-muted: 0 47% 45%;
+    --red-muted-foreground: 0 0% 98%;
+    --red-accent: 0 35% 55%;
+    --red-accent-light: 0 25% 65%;
+    
+    /* Chart and data visualization colors */
+    --chart-red-primary: 0 72% 51%;
+    --chart-red-secondary: 0 84% 60%;
+    --chart-red-dark: 0 77% 38%;
+    --chart-red-darker: 0 76% 35%;
+    
+    /* Status and state colors */
+    --error: 0 84% 60%;
+    --warning: 0 84% 60%;
+    --success: 0 0% 20%;
+  }
+
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+
+    --sidebar-background: 0 0% 3.9%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 0 0% 9%;
+    --sidebar-accent: 0 0% 14.9%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 14.9%;
+    --sidebar-ring: 0 0% 83.1%;
+
+    /* Premium red accent colors for dark mode */
+    --red-muted: 0 47% 55%;
+    --red-muted-foreground: 0 0% 9%;
+    --red-accent: 0 35% 65%;
+    --red-accent-light: 0 25% 75%;
+    
+    /* Chart and data visualization colors for dark mode */
+    --chart-red-primary: 0 72% 61%;
+    --chart-red-secondary: 0 84% 70%;
+    --chart-red-dark: 0 77% 48%;
+    --chart-red-darker: 0 76% 45%;
+    
+    /* Status and state colors for dark mode */
+    --error: 0 84% 70%;
+    --warning: 0 84% 70%;
+    --success: 0 0% 80%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+@layer utilities {
+  .font-digits {
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .text-red-muted {
+    color: hsl(var(--red-muted));
+  }
+
+  .bg-red-muted {
+    background-color: hsl(var(--red-muted));
+  }
+
+  .border-red-muted {
+    border-color: hsl(var(--red-muted));
+  }
+
+  .text-red-accent {
+    color: hsl(var(--red-accent));
+  }
+
+  .bg-red-accent {
+    background-color: hsl(var(--red-accent));
+  }
+
+  .hover\:bg-red-accent:hover {
+    background-color: hsl(var(--red-accent));
+  }
+
+  .bg-red-accent-light {
+    background-color: hsl(var(--red-accent-light));
+  }
+
+  /* Chart color utilities */
+  .chart-red-primary {
+    color: hsl(var(--chart-red-primary));
+  }
+  
+  .chart-red-secondary {
+    color: hsl(var(--chart-red-secondary));
+  }
+  
+  .chart-red-dark {
+    color: hsl(var(--chart-red-dark));
+  }
+  
+  .chart-red-darker {
+    color: hsl(var(--chart-red-darker));
+  }
+  
+  /* Status colors */
+  .text-error {
+    color: hsl(var(--error));
+  }
+  
+  .bg-error {
+    background-color: hsl(var(--error));
+  }
+  
+  .text-warning {
+    color: hsl(var(--warning));
+  }
+  
+  .bg-warning {
+    background-color: hsl(var(--warning));
+  }
+  
+  .text-success {
+    color: hsl(var(--success));
+  }
+   
+  .bg-success {
+    background-color: hsl(var(--success));
+  }
+  
+  /* Custom Document Center animations */
+  .animate-fadeIn {
+    animation: fadeIn 1s ease-in-out;
+  }
+  
+  .animate-slideUp {
+    animation: slideUp 0.6s ease-out;
+  }
+  
+  .animate-expandWidth {
+    animation: expandWidth 2s ease-out;
+  }
+
+  /* Login page animations */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite alternate;
+  }
+
+  .animate-slide-in-left {
+    animation: slideInLeft 0.8s ease-out;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.8s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.6s ease-out;
+  }
+
+  /* Custom scrollbar styles */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 2px;
+    transition: background-color 0.3s ease;
+  }
+
+  .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: #9ca3af;
+  }
+
+  .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+  }
+
+  .scrollbar-thumb-gray-400::-webkit-scrollbar-thumb {
+    background-color: #9ca3af;
+  }
+
+  .scrollbar-track-transparent::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Ensure buttons maintain their proper styling */
+  button.scrollbar-thin,
+  .scrollbar-thin button {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+
+  button.scrollbar-thin::-webkit-scrollbar,
+  .scrollbar-thin button::-webkit-scrollbar {
+    width: auto;
+    height: auto;
+  }
+
+  button.scrollbar-thin::-webkit-scrollbar-track,
+  .scrollbar-thin button::-webkit-scrollbar-track {
+    background: auto;
+  }
+
+  button.scrollbar-thin::-webkit-scrollbar-thumb,
+  .scrollbar-thin button::-webkit-scrollbar-thumb {
+    background-color: auto;
+    border-radius: auto;
+    transition: auto;
+  }
+
+  /* Specific scrollbar container class to avoid conflicts */
+  .scrollable-container {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+
+  .scrollable-container::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .scrollable-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollable-container::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 2px;
+    transition: background-color 0.3s ease;
+  }
+
+  .scrollable-container:hover::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+  }
+
+  .scrollable-container::-webkit-scrollbar-thumb:hover {
+    background-color: #9ca3af;
+  }
+
+  /* Hide scrollbar completely while maintaining scroll functionality */
+  .scrollbar-hide {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+  }
+
+  /* Dialog overlay and content styling */
+  .dialog-overlay {
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 50;
+  }
+
+  .dialog-content {
+    z-index: 51;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+}
